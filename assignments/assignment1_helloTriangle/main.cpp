@@ -27,7 +27,6 @@ int main() {
 		printf("GLAD Failed to load GL headers");
 		return 1;
 	}
-	//Initialization goes here!
 
 	float vertices[] = {
 		// positions         // colors
@@ -36,24 +35,23 @@ int main() {
 		 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f, 1.0f,   // top 
 	};
 
-	//Create Vertex Buffer Object
+	// Create Vertex Buffer Object
 	unsigned int VBO;
 	glGenBuffers(1, &VBO);
-	
-	//Put data into the currently bound VBO
+	// Put data into the currently bound VBO
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	
+
+	// VAO
 	unsigned int VAO;
 	glGenVertexArrays(1, &VAO);
 
-	// ..:: Initialization code (done once (unless your object frequently changes)) :: ..
+	// Initialization of Triangle
 	// 1. bind Vertex Array Object
 	glBindVertexArray(VAO);
 	// 2. copy our vertices array in a buffer for OpenGL to use
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
 	// position attribute
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -61,14 +59,16 @@ int main() {
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
+	// Make the shader object and provide the vertex and fragment shaders
 	evan::Shader shader("assets/vertexShader.vert", "assets/fragmentShader.frag");
 
 	// get uniform variable locations
-	//int timeLocation = glGetUniformLocation(shaderProgram, "uTime");
+	int timeLocation = glGetUniformLocation(shader.ID, "uTime");
 
 	//Render loop
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
+
 		//Clear framebuffer
 		glClearColor(1.0f, 0.5f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -76,11 +76,9 @@ int main() {
 		// update the time
 		float time = (float)glfwGetTime();
 
+		glUniform1f(timeLocation, time);
+
 		shader.use();
-
-		//glUniform1f(timeLocation, time);
-
-		glBindVertexArray(VAO);
 
 		// DRAW CALL
 		glDrawArrays(GL_TRIANGLES, 0, 3);

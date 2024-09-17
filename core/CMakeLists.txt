@@ -15,7 +15,7 @@ set(CORE_INC_DIR
  CACHE PATH "CORE INCLUDE SOURCE PATH"
 )
 
-add_library(core STATIC ${CORE_SRC} ${CORE_INC} "evan/shader.h" "evan/shader.cpp")
+add_library(core STATIC ${CORE_SRC} ${CORE_INC} "evan/shader.h" "evan/shader.cpp" "evan/texture2d.h" "evan/texture2d.cpp")
 
 find_package(OpenGL REQUIRED)
 

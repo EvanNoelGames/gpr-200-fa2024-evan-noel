@@ -73,18 +73,28 @@ int main() {
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	// Make the texture
+	// Make the textures
 	evan::Texture2D smile("assets/smile.png", GL_NEAREST, GL_CLAMP_TO_EDGE, true);
-	unsigned int texture = smile.GetID();
+	unsigned int smileTexture = smile.GetID();
+
+	evan::Texture2D bg("assets/brick.png", GL_LINEAR, GL_REPEAT);
+	unsigned int bgTexture = bg.GetID();
+
+	evan::Texture2D bgX("assets/x.png", GL_LINEAR, GL_REPEAT, true);
+	unsigned int bgXTexture = bgX.GetID();
 
 	// Make the shader object and provide the vertex and fragment shaders
-	evan::Shader shader("assets/vertexShader.vert", "assets/fragmentShader.frag");
+	evan::Shader smileShader("assets/vertexShader.vert", "assets/fragmentShader.frag");
+	evan::Shader bgShader("assets/backgroundVertexShader.vert", "assets/backgroundFragmentShader.frag");
 
 	// Wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	// get uniform variable locations
-	int timeLocation = glGetUniformLocation(shader.ID, "uTime");
+	int smileTimeLocation = glGetUniformLocation(smileShader.ID, "uTime");
+	int bgTimeLocation = glGetUniformLocation(bgShader.ID, "uTime");
+	int bgFirstTexture = glGetUniformLocation(bgShader.ID, "uTexture");
+	int bgSecondTexture = glGetUniformLocation(bgShader.ID, "uTexture2");
 
 	//Render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -97,12 +107,27 @@ int main() {
 		// update the time
 		float time = (float)glfwGetTime();
 
-		glUniform1f(timeLocation, time);
+		// BG
+		bgShader.use();
+		glUniform1f(bgTimeLocation, time);
+		glUniform1i(bgFirstTexture, bgTexture);
+		glUniform1i(bgSecondTexture, bgXTexture);
 
-		shader.use();
+		glActiveTexture(GL_TEXTURE0 + 2);
+		glBindTexture(GL_TEXTURE_2D, bgXTexture);
+		glActiveTexture(GL_TEXTURE0 + 3);
+		glBindTexture(GL_TEXTURE_2D, bgTexture);
 
 		// DRAW CALL
-		glBindTexture(GL_TEXTURE_2D, texture);
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		// SMILE
+		smileShader.use();
+		glUniform1f(smileTimeLocation, time);
+		// DRAW CALL
+		glActiveTexture(GL_TEXTURE0 + 0);
+		glBindTexture(GL_TEXTURE_2D, smileTexture);
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 

@@ -4,7 +4,7 @@ layout (location = 1) in vec2 aTexCoord; // the color variable has attribute pos
 
 uniform float uTime;
 
-out vec3 ourColor; // output a color to the fragment shader
+out vec4 ourColor; // output a color to the fragment shader
 out vec2 TexCoord;
 
 void main()

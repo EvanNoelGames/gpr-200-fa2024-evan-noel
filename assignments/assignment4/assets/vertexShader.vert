@@ -4,14 +4,16 @@ layout (location = 1) in vec2 aTexCoord; // the color variable has attribute pos
 
 uniform float uTime;
 
-out vec4 ourColor; // output a color to the fragment shader
 out vec2 TexCoord;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 
 void main()
 {
-	vec3 pos = aPos;
-	pos.y += abs(sin((uTime * 2)) * 0.1);
-	gl_Position = vec4(pos.x, pos.y, pos.z, 1.0); // see how we directly give a vec3 to vec4's constructor
-	//ourColor = aColor; // set ourColor to the input color we got from the vertex data
+	// note that we read the multiplication from right to left
+    gl_Position = projection * view * model * vec4(aPos, 1.0);
+
 	TexCoord = aTexCoord;
 };

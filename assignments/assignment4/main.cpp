@@ -5,6 +5,7 @@
 #include <ew/ewMath/ewMath.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/ext.hpp>
 
 #include <evan/shader.h>
 
@@ -20,7 +21,7 @@ int main() {
 		printf("GLFW failed to init!");
 		return 1;
 	}
-	GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hello Textures", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hello Cubes", NULL, NULL);
 	if (window == NULL) {
 		printf("GLFW failed to create window");
 		return 1;
@@ -32,15 +33,65 @@ int main() {
 	}
 
 	float vertices[] = {
-		// positions          // texture coords
-		0.25f,   0.25f, 0.0f, 1.0f, 1.0f,  // top right
-		0.25f,  -0.5f,  0.0f, 1.0f, 0.0f,  // bottom right
-		-0.25f, -0.5f,  0.0f, 0.0f, 0.0f,  // bottom left
-		-0.25f,  0.25f, 0.0f, 0.0f, 1.0f   // top left 
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
+
 	unsigned int indices[] = {  // note that we start from 0!
 		0, 1, 3,   // first triangle
 		1, 2, 3    // second triangle
+	};
+
+	glm::vec3 cubePositions[] = {
+	glm::vec3(0.0f,  0.0f,  0.0f),
+	glm::vec3(2.0f,  5.0f, -15.0f),
+	glm::vec3(-1.5f, -2.2f, -2.5f),
+	glm::vec3(-3.8f, -2.0f, -12.3f),
+	glm::vec3(2.4f, -0.4f, -3.5f),
+	glm::vec3(-1.7f,  3.0f, -7.5f),
+	glm::vec3(1.3f, -2.0f, -2.5f),
+	glm::vec3(1.5f,  2.0f, -2.5f),
+	glm::vec3(1.5f,  0.2f, -1.5f),
+	glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
 	// Create EBO
@@ -74,65 +125,74 @@ int main() {
 	glEnableVertexAttribArray(1);
 
 	// Make the textures
-	evan::Texture2D smile("assets/smile.png", GL_NEAREST, GL_CLAMP_TO_EDGE, true);
-	unsigned int smileTexture = smile.GetID();
+	evan::Texture2D brick("assets/brick.png", GL_LINEAR, GL_REPEAT);
+	unsigned int brickTexture = brick.GetID();
 
-	evan::Texture2D bg("assets/brick.png", GL_LINEAR, GL_REPEAT);
-	unsigned int bgTexture = bg.GetID();
+	// Make the Shaders
+	evan::Shader brickShader("assets/vertexShader.vert", "assets/fragmentShader.frag");
 
-	evan::Texture2D bgX("assets/x.png", GL_LINEAR, GL_REPEAT, true);
-	unsigned int bgXTexture = bgX.GetID();
+	// Projection Matrix
+	glm::mat4 projection;
+	projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
-	// Make the shader object and provide the vertex and fragment shaders
-	evan::Shader smileShader("assets/vertexShader.vert", "assets/fragmentShader.frag");
-	evan::Shader bgShader("assets/backgroundVertexShader.vert", "assets/backgroundFragmentShader.frag");
+	// Uniforms
+	int timeLocation = glGetUniformLocation(brickShader.ID, "uTime");
+
 
 	// Wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	// get uniform variable locations
-	int smileTimeLocation = glGetUniformLocation(smileShader.ID, "uTime");
-	int bgTimeLocation = glGetUniformLocation(bgShader.ID, "uTime");
-	int bgFirstTexture = glGetUniformLocation(bgShader.ID, "uTexture");
-	int bgSecondTexture = glGetUniformLocation(bgShader.ID, "uTexture2");
+	glEnable(GL_DEPTH_TEST);
 
 	//Render loop
 	while (!glfwWindowShouldClose(window)) {
-		glfwPollEvents();
-
 		//Clear framebuffer
 		glClearColor(1.0f, 0.5f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// update the time
 		float time = (float)glfwGetTime();
 
 		// BG
-		bgShader.use();
-		glUniform1f(bgTimeLocation, time);
-		glUniform1i(bgFirstTexture, bgTexture);
-		glUniform1i(bgSecondTexture, bgXTexture);
+		brickShader.use();
+		glUniform1f(timeLocation, time);
 
-		glActiveTexture(GL_TEXTURE0 + 2);
-		glBindTexture(GL_TEXTURE_2D, bgXTexture);
-		glActiveTexture(GL_TEXTURE0 + 3);
-		glBindTexture(GL_TEXTURE_2D, bgTexture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, brickTexture);
+
+		// Camera Projections
+		glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, 0.1f, 100.0f);
+		glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
+		// Model Matrix
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+		glm::mat4 view = glm::mat4(1.0f);
+
+		// note that we're translating the scene in the reverse direction of where we want to move
+		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		int modelLoc = glGetUniformLocation(brickShader.ID, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		unsigned int viewLoc = glGetUniformLocation(brickShader.ID, "view");
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
+		brickShader.setMat4("projection", projection);
 
 		// DRAW CALL
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		for (unsigned int i = 0; i < 10; i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubePositions[i]);
+			float angle = 20.0f * i;
+			model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+			brickShader.setMat4("model", model);
 
-		// SMILE
-		smileShader.use();
-		glUniform1f(smileTimeLocation, time);
-		// DRAW CALL
-		glActiveTexture(GL_TEXTURE0 + 0);
-		glBindTexture(GL_TEXTURE_2D, smileTexture);
-		glBindVertexArray(VAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 		// Drawing happens here
 		glfwSwapBuffers(window);
+		glfwPollEvents();
 	}
 	printf("Shutting down...");
 }

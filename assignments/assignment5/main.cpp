@@ -1,3 +1,7 @@
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 #include <stdio.h>
 #include <math.h>
 
@@ -37,7 +41,7 @@ int main() {
 		printf("GLFW failed to init!");
 		return 1;
 	}
-	GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hello Cubes", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hello Lighting", NULL, NULL);
 	if (window == NULL) {
 		printf("GLFW failed to create window");
 		return 1;
@@ -48,12 +52,15 @@ int main() {
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
 	if (!gladLoadGL(glfwGetProcAddress)) {
 		printf("GLAD Failed to load GL headers");
 		return 1;
 	}
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init();
 
 	float vertices[] = {
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -153,6 +160,8 @@ int main() {
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(2);
 
 	// Make the textures
 	evan::Texture2D brick("assets/brick.png", GL_LINEAR, GL_REPEAT);
@@ -160,6 +169,7 @@ int main() {
 
 	// Make the Shaders
 	evan::Shader brickShader("assets/vertexShader.vert", "assets/fragmentShader.frag");
+	evan::Shader lightShader("assets/vertexShaderLight.vert", "assets/fragmentShaderLight.frag");
 
 	// Projection Matrix
 	glm::mat4 projection;
@@ -167,10 +177,22 @@ int main() {
 
 	// Uniforms
 	int timeLocation = glGetUniformLocation(brickShader.ID, "uTime");
+	int ambientLocation = glGetUniformLocation(brickShader.ID, "ambientStrength");
+	int diffLocation = glGetUniformLocation(brickShader.ID, "diffStrength");
+	int specularLocation = glGetUniformLocation(brickShader.ID, "specularStrength");
+	int shininessLocation = glGetUniformLocation(brickShader.ID, "shininess");
 
 
 	// Wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	// extra
+	glm::vec3 lightPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+	float ambientStrength = 0.1f;
+	float diffStrength = 1.0f;
+	float specularStrength = 0.5f;
+	float shininess = 512.0f;
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -186,15 +208,22 @@ int main() {
 		processInput(window);
 
 		//Clear framebuffer
-		glClearColor(1.0f, 0.5f, 1.0f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// update the time
 		float time = (float)glfwGetTime();
 
-		// BG
 		brickShader.use();
 		glUniform1f(timeLocation, time);
+		glUniform1f(ambientLocation, ambientStrength);
+		glUniform1f(diffLocation, diffStrength);
+		glUniform1f(specularLocation, specularStrength);
+		glUniform1f(shininessLocation, shininess);
+
+		brickShader.setVec3("lightPos", lightPosition);
+		brickShader.setVec3("viewPos", camera.Position);
+		brickShader.setVec3("lightColor", lightColor);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, brickTexture);
@@ -219,9 +248,44 @@ int main() {
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
+
+		lightShader.use();
+
+		lightShader.setMat4("projection", projection);
+		lightShader.setMat4("view", view);
+		lightShader.setVec3("ourColor", lightColor);
+
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, lightPosition);
+		model = glm::rotate(model, glm::radians(1.00f), (glm::vec3(0.5f, 1.0f, 0.0f)) * deltaTime);
+		model = glm::scale(model, glm::vec3(1));
+		lightShader.setMat4("model", model);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		
+		// Start drawing ImGUI
+		ImGui_ImplGlfw_NewFrame();
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui::NewFrame();
+
+		// Create a window called settings
+		ImGui::Begin("Settings");
+		ImGui::Text("Controls");
+		ImGui::DragFloat3("Light Position", &lightPosition.x, 0.1f);
+		ImGui::ColorEdit3("Light Color", &lightColor.r);
+		ImGui::SliderFloat("Ambient K", &ambientStrength, 0.0f, 1.0f);
+		ImGui::SliderFloat("Diffuse K", &diffStrength, 0.0f, 1.0f);
+		ImGui::SliderFloat("Specular K", &specularStrength, 0.0f, 1.0f);
+		ImGui::SliderFloat("Shininess", &shininess, 2.0f, 1024.0f);
+		ImGui::End();
+
+		// Render IMGUI elements using OpenGL
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 		// Drawing happens here
 		glfwPollEvents();
 		glfwSwapBuffers(window);
@@ -241,6 +305,11 @@ void processInput(GLFWwindow* window)
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
 		camera.MovementSpeed = camera.BaseMovementSpeed;
+
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS)
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //Locks
+	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_RELEASE)
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); //Unlocks
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -286,7 +355,8 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 	lastX = xpos;
 	lastY = ypos;
 
-	camera.ProcessMouseMovement(xoffset, yoffset);
+	if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+		camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called

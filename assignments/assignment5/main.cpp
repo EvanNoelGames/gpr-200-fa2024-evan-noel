@@ -156,11 +156,11 @@ int main() {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 	// 4. then set the vertex attributes pointers
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // positions
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // UVs
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // normals
 	glEnableVertexAttribArray(2);
 
 	// Make the textures
@@ -196,7 +196,7 @@ int main() {
 
 	glEnable(GL_DEPTH_TEST);
 
-	//Render loop
+	// Render loop
 	while (!glfwWindowShouldClose(window)) {
 
 		// update time varaiables
@@ -207,14 +207,16 @@ int main() {
 		// input
 		processInput(window);
 
-		//Clear framebuffer
+		// Clear framebuffer
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// update the time
+		// update the time variable
 		float time = (float)glfwGetTime();
 
 		brickShader.use();
+
+		// set uniforms (brick)
 		glUniform1f(timeLocation, time);
 		glUniform1f(ambientLocation, ambientStrength);
 		glUniform1f(diffLocation, diffStrength);
@@ -225,6 +227,7 @@ int main() {
 		brickShader.setVec3("viewPos", camera.Position);
 		brickShader.setVec3("lightColor", lightColor);
 
+		// set brick texture
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, brickTexture);
 
@@ -236,8 +239,7 @@ int main() {
 		glm::mat4 view = camera.GetViewMatrix();
 		brickShader.setMat4("view", view);
 
-		// DRAW CALL
-		glBindVertexArray(VAO);
+		// setup models for brick cubes
 		for (unsigned int i = 0; i < 20; i++)
 		{
 			glm::mat4 model = glm::mat4(1.0f);
@@ -251,10 +253,12 @@ int main() {
 
 		lightShader.use();
 
+		// set uniforms (light)
 		lightShader.setMat4("projection", projection);
 		lightShader.setMat4("view", view);
 		lightShader.setVec3("ourColor", lightColor);
 
+		// setup model for light cube
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, lightPosition);
 		model = glm::rotate(model, glm::radians(1.00f), (glm::vec3(0.5f, 1.0f, 0.0f)) * deltaTime);
@@ -263,8 +267,8 @@ int main() {
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
+		// draw
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
 		
 		// Start drawing ImGUI
 		ImGui_ImplGlfw_NewFrame();

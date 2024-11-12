@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <filesystem>
 
 #include <ew/external/glad.h>
 #include <ew/ewMath/ewMath.h>
@@ -13,6 +14,7 @@
 
 #include <evan/shader.h>
 #include <evan/camera.h>
+#include <evan/cubemap.h>
 
 #include <evan/texture2d.h>
 #include <ew/external/stb_image.h>
@@ -111,6 +113,51 @@ int main() {
 		1, 2, 3    // second triangle
 	};
 
+	float skyboxVertices[] = {
+		// positions          
+		-1.0f,  1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		-1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f
+	};
+
 	glm::vec3 cubePositions[20];
 	float cubePosRange = 10.0f;
 	for (int i = 0; i < 20; i++)
@@ -163,6 +210,29 @@ int main() {
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(2);
 
+	// skybox VAO
+	unsigned int skyboxVAO, skyboxVBO;
+	glGenVertexArrays(1, &skyboxVAO);
+	glGenBuffers(1, &skyboxVBO);
+	glBindVertexArray(skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	// load textures
+	// -------------
+	std::vector<std::string> faces
+	{
+		"assets/skybox/right.jpg",
+		"assets/skybox/left.jpg",
+		"assets/skybox/top.jpg",
+		"assets/skybox/bottom.jpg",
+		"assets/skybox/front.jpg",
+		"assets/skybox/back.jpg"
+	};
+	evan::Cubemap cubemapTexture = evan::Cubemap(faces);
+
 	// Make the textures
 	evan::Texture2D brick("assets/brick.png", GL_LINEAR, GL_REPEAT);
 	unsigned int brickTexture = brick.GetID();
@@ -170,6 +240,7 @@ int main() {
 	// Make the Shaders
 	evan::Shader brickShader("assets/vertexShader.vert", "assets/fragmentShader.frag");
 	evan::Shader lightShader("assets/vertexShaderLight.vert", "assets/fragmentShaderLight.frag");
+	evan::Shader skyboxShader("assets/cubemap.vert", "assets/cubemap.frag");
 
 	// Projection Matrix
 	glm::mat4 projection;
@@ -265,6 +336,23 @@ int main() {
 
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		skyboxShader.use();
+		skyboxShader.setInt("skybox", 0);
+
+		// draw skybox as last
+		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+		skyboxShader.use();
+		view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // remove translation from the view matrix
+		skyboxShader.setMat4("view", view);
+		skyboxShader.setMat4("projection", projection);
+		// skybox cube
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture.GetID());
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+		glDepthFunc(GL_LESS); // set depth function back to default
 		
 		// Start drawing ImGUI
 		ImGui_ImplGlfw_NewFrame();
